@@ -39,4 +39,9 @@ public class Vec3i {
 		Vec3i v = (Vec3i) obj;
 		return x==v.x && y==v.y && z==v.z;
 	}
+	
+	@Override
+	public String toString(){
+		return "<"+x+","+y+","+z+">";
+	}
 }

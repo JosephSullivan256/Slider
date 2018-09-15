@@ -60,7 +60,6 @@ public class VertexArrayObject {
 	}
 	
 	public void drawElements(int count) {
-		//glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 		glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, 0);
 	}
 	

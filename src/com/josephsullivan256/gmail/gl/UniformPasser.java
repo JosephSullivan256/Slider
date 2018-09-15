@@ -15,6 +15,10 @@ import com.josephsullivan256.gmail.math.linalg.Vec4;
 public interface UniformPasser<T>{
 	public void pass(T t, int location);
 	
+	public static UniformPasser<Integer> uniform1i = (t,l)->{
+		glUniform1i(l, t);
+	};
+	
 	public static UniformPasser<Vec3> uniform3f = (t,l)->{
 		glUniform3f(l, t.x, t.y, t.z);
 	};
