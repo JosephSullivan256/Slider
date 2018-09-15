@@ -34,14 +34,21 @@ vec3 phong(vec3 amb, vec3 diff, vec3 spec, vec3 norm, vec3 viewDir, vec3 lightDi
 void main()
 {
 	vec2 position = vec2(gl_FragCoord.x/800,gl_FragCoord.y/800)*2-vec2(1,1);
-	float quantification = 1*(pow(position.x,2)+pow(position.y,2))+100*pow(gl_FragCoord.z,2);
-	if(quantification < 97) discard;
+	float zScale = 0.25;
+	float quantification = 1*(pow(position.x,2)+pow(position.y,2))+pow(gl_FragCoord.z/zScale,2);
 	
-	//sun lighting
-	vec3 sunDir = normalize(-sun.direction);
-	vec3 viewDir = reflect(-sunDir, normal);
+	float quota = 15;
 	
-	vec3 result = phong(sun.ambient, sun.diffuse, sun.specular, normal, viewDir, sunDir, 32) * mix(texture(noise, texCoord/4).rgb,color,0.8);
-	
-	FragColor = vec4(result,1.0);
+	if(quantification < quota) discard;
+	else if (quantification < quota*1.01){
+		FragColor = vec4(0.9,0.9,0.8,1.0);
+	} else {
+		//sun lighting
+		vec3 sunDir = normalize(-sun.direction);
+		vec3 viewDir = reflect(-sunDir, normal);
+		
+		vec3 result = phong(sun.ambient, sun.diffuse, sun.specular, normal, viewDir, sunDir, 32) * mix(texture(noise, texCoord/4).rgb,color,0.8);
+		
+		FragColor = vec4(result,1.0);
+	}
 }
