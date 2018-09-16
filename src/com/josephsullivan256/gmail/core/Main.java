@@ -15,6 +15,7 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 
 import com.josephsullivan256.gmail.gl.BufferObject;
+import com.josephsullivan256.gmail.gl.FrameBuffer;
 import com.josephsullivan256.gmail.gl.Shader;
 import com.josephsullivan256.gmail.gl.Texture;
 import com.josephsullivan256.gmail.gl.Uniform;
@@ -29,9 +30,10 @@ import com.josephsullivan256.gmail.gl.input.CollectionCursorPosCallback;
 import com.josephsullivan256.gmail.gl.input.CollectionKeyCallback;
 import com.josephsullivan256.gmail.math.linalg.Matrix;
 import com.josephsullivan256.gmail.math.linalg.Vec2;
+import com.josephsullivan256.gmail.math.linalg.Vec2i;
 import com.josephsullivan256.gmail.math.linalg.Vec3;
-import com.josephsullivan256.gmail.math.linalg.Vec4;
 import com.josephsullivan256.gmail.util.Pair;
+import com.josephsullivan256.gmail.util.Procedure;
 
 public class Main {
 	
@@ -56,12 +58,15 @@ public class Main {
 		
 		Level3D lvl = new Level3D(20,20,20,50);
 		
-		Matrix perspective = Matrix.perspective((float)width/(float)height, (float)Math.PI/2f, 1000f, 0.1f);
+		float far = 1000f;
+		float near = 0.1f;
+		Matrix perspective = Matrix.perspective((float)width/(float)height, (float)Math.PI/2f, far, near);
 		
 		Utils.initGL();
 		
 		Shader shader0 = new Shader(Utils.readFile("shaders/shader0.vsh"),Utils.readFile("shaders/shader0.fsh"));
 		Shader shader1 = new Shader(Utils.readFile("shaders/shader1.vsh"),Utils.readFile("shaders/shader1.fsh"));
+		Shader shaderF0 = new Shader(Utils.readFile("shaders/shaderF0.vsh"),Utils.readFile("shaders/shaderF0.fsh"));
 		
 		Texture tex0 = new Texture(ImageIO.read(new File("textures/noise0.png")));
 		Texture tex1 = new Texture(ImageIO.read(new File("textures/noise1.png")));
@@ -164,6 +169,7 @@ public class Main {
 					);
 		}
 		
+		//instantiate uniform classes
 		Uniform<Vec3> sunDirection, sunAmbient, sunDiffuse, sunSpecular;
 		sunDirection = new Uniform<Vec3>("sun.direction",UniformPasser.uniform3f);
 		sunAmbient = new Uniform<Vec3>("sun.ambient",UniformPasser.uniform3f);
@@ -173,9 +179,58 @@ public class Main {
 		
 		Uniform<Matrix> transformUniform = new Uniform<Matrix>("transform",UniformPasser.uniformMatrix4);
 		Uniform<Matrix> perspectiveUniform = new Uniform<Matrix>("perspective",UniformPasser.uniformMatrix4);
-		
-		//uniform textures
 		Uniform<Integer> texUniform = new Uniform<Integer>("noise",UniformPasser.uniform1i);
+		
+		Uniform<Vec2> nearFarUniform = new Uniform<Vec2>("nf",UniformPasser.uniform2f);
+		Uniform<Vec2> dimensionsUniform = new Uniform<Vec2>("dimensions",UniformPasser.uniform2f);
+		Uniform<Integer> texF0Uniform0 = new Uniform<Integer>("scene",UniformPasser.uniform1i);
+		Uniform<Integer> texF0Uniform1 = new Uniform<Integer>("depth",UniformPasser.uniform1i);
+		
+		//render procedures
+		Procedure drawVao0 = ()->{
+			vao0.bind();
+			shader0.use();
+			
+			//uniforms
+			transformUniform.uniform(camera.getTransform(), shader0);
+			perspectiveUniform.uniform(perspective, shader0);
+			
+			//assign texture to unit
+			tex2.assignToUnit(0);
+			
+			//glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+			vao0.drawArraysInstanced(indices.length, offsets0.length);
+			vao0.unbind();
+		};
+		
+		Procedure drawVao1 = ()->{
+			vao1.bind();
+			shader1.use();
+			
+			//uniforms
+			transformUniform.uniform(camera.getTransform(), shader1);
+			perspectiveUniform.uniform(perspective, shader1);
+			
+			//assign texture to unit
+			tex2.assignToUnit(0);
+			
+			//glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+			vao1.drawArraysInstanced(indices.length, offsets1.length);
+			vao1.unbind();
+		};
+		
+		Pair<FrameBuffer,Texture[]> pair = FrameBuffer.withColorDepth(width, height);
+		FrameBuffer fbo = pair.a;
+		ScreenRenderProcedure drawScreen = new ScreenRenderProcedure(
+				shaderF0,
+				pair.b,
+				()->{
+						texF0Uniform0.uniform(0, shaderF0);
+						texF0Uniform1.uniform(1, shaderF0);
+						nearFarUniform.uniform(new Vec2(near,far), shaderF0);
+						dimensionsUniform.uniform(new Vec2(width,height), shaderF0);
+					}
+				);
 		
 		//initial uniforms
 		shader0.use();
@@ -195,10 +250,7 @@ public class Main {
 		//pre-render state settings
 		GL11.glViewport(0, 0, width, height);
 		//GL11.glEnable(GL11.GL_CULL_FACE); 
-		GL11.glEnable(GL11.GL_DEPTH_TEST);
-		GL11.glClearColor(0f, 0f, 0f, 0f);
 		while(!window.shouldClose()) {
-			GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
 			
 			//bind vao
 			//use shader
@@ -207,37 +259,22 @@ public class Main {
 			//draw vao
 			//unbind vao
 			
-			{
-				vao0.bind();
-				shader0.use();
-				
-				//uniforms
-				transformUniform.uniform(camera.getTransform(), shader0);
-				perspectiveUniform.uniform(perspective, shader0);
-				
-				//assign texture to unit
-				tex2.assignToUnit(0);
-				
-				//glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-				vao0.drawArraysInstanced(indices.length, offsets0.length);
-				vao0.unbind();
-			}
+			fbo.bind();
 			
-			{
-				vao1.bind();
-				shader1.use();
-				
-				//uniforms
-				transformUniform.uniform(camera.getTransform(), shader1);
-				perspectiveUniform.uniform(perspective, shader1);
-				
-				//assign texture to unit
-				tex2.assignToUnit(0);
-				
-				//glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-				vao1.drawArraysInstanced(indices.length, offsets1.length);
-				vao1.unbind();
-			}
+			GL11.glClearColor(0f, 0f, 0f, 0f);
+			GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
+			GL11.glEnable(GL11.GL_DEPTH_TEST);
+			
+			drawVao0.run();
+			drawVao1.run();
+			
+			fbo.unbind();
+			
+			GL11.glClearColor(0f, 0f, 0f, 0f);
+			GL11.glClear(GL11.GL_COLOR_BUFFER_BIT);
+			GL11.glDisable(GL11.GL_DEPTH_TEST);
+			
+			drawScreen.run();
 			
 			camera.move(cameraCallback.getMovement().scaledBy(0.1f));
 			camera.rotate(cameraCallback.getRotation().scaledBy(0.001f));

@@ -4,11 +4,26 @@ import java.awt.image.BufferedImage;
 
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
+import org.lwjgl.opengl.GL14;
 import org.lwjgl.opengl.GL30;
+
+import static org.lwjgl.system.MemoryUtil.NULL;
 
 public class Texture {
 	
 	private int texture;
+	
+	public static Texture createEmpty(int width, int height, int wrapping, int minifyFilter, int magnifyFilter){
+		Texture tex = new Texture(wrapping,minifyFilter,magnifyFilter);
+		tex.generate(width,height);
+		return tex;
+	}
+	
+	public static Texture createEmptyDepth(int width, int height, int wrapping, int minifyFilter, int magnifyFilter){
+		Texture tex = new Texture(wrapping,minifyFilter,magnifyFilter);
+		tex.generateDepth(width,height);
+		return tex;
+	}
 	
 	public Texture(int wrapping, int minifyFilter, int magnifyFilter){
 		texture = GL11.glGenTextures();
@@ -66,6 +81,14 @@ public class Texture {
 		GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGB, width, height, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, data);
 	}
 	
+	public void generate(int width, int height){
+		GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGB, width, height, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, NULL);
+	}
+	
+	public void generateDepth(int width, int height){
+		GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL14.GL_DEPTH_COMPONENT32, width, height, 0, GL11.GL_DEPTH_COMPONENT, GL11.GL_FLOAT, NULL);
+	}
+	
 	public void generateMipmap(){
 		GL30.glGenerateMipmap(GL11.GL_TEXTURE_2D);
 	}
@@ -73,5 +96,13 @@ public class Texture {
 	public void assignToUnit(int n){
 		GL13.glActiveTexture(GL13.GL_TEXTURE0+n);
 		bind();
+	}
+	
+	public void attachToBoundFrameBufferColor(){
+		GL30.glFramebufferTexture2D(GL30.GL_FRAMEBUFFER, GL30.GL_COLOR_ATTACHMENT0, GL11.GL_TEXTURE_2D, texture, 0);
+	}
+	
+	public void attachToBoundFrameBufferDepth(){
+		GL30.glFramebufferTexture2D(GL30.GL_FRAMEBUFFER, GL30.GL_DEPTH_ATTACHMENT, GL11.GL_TEXTURE_2D, texture, 0);
 	}
 }

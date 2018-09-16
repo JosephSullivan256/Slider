@@ -59,6 +59,10 @@ public class VertexArrayObject {
 		glBindVertexArray(0);
 	}
 	
+	public void drawArrays(int count){
+		glDrawArrays(GL_TRIANGLES, 0, count);
+	}
+	
 	public void drawElements(int count) {
 		glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, 0);
 	}

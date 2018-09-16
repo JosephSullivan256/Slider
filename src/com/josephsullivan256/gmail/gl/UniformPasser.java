@@ -9,6 +9,7 @@ import org.lwjgl.system.MemoryStack;
 
 import com.josephsullivan256.gmail.math.linalg.Matrix;
 import com.josephsullivan256.gmail.math.linalg.Vec2;
+import com.josephsullivan256.gmail.math.linalg.Vec2i;
 import com.josephsullivan256.gmail.math.linalg.Vec3;
 import com.josephsullivan256.gmail.math.linalg.Vec4;
 
@@ -17,6 +18,14 @@ public interface UniformPasser<T>{
 	
 	public static UniformPasser<Integer> uniform1i = (t,l)->{
 		glUniform1i(l, t);
+	};
+	
+	public static UniformPasser<Vec2i> uniform2i = (t,l)->{
+		glUniform2i(l, t.x, t.y);
+	};
+	
+	public static UniformPasser<Vec2> uniform2f = (t,l)->{
+		glUniform2f(l, t.x, t.y);
 	};
 	
 	public static UniformPasser<Vec3> uniform3f = (t,l)->{
