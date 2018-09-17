@@ -2,6 +2,7 @@
 
 out vec4 FragColor;
 
+in vec2 pos;
 in vec2 texCoord;
 
 uniform sampler2D scene;
@@ -62,8 +63,19 @@ void main()
 	float z0 = getZ(texture(depth,vec2(0.5,0.5)).x);
 	float z1 = getZ(texture(depth,texCoord).x);
 	
-	//float z = 2*nf.y/(texture(depth,texCoord).x*(nf.y-nf.x)+nf.y+nf.x);
-	vec3 color = mix(texture(scene, texCoord).xyz,getKernelColor5(kernel, texCoord, scene),min(1,abs(0.1*(z1-z0))));
+	vec3 r_color = texture(scene, texCoord).xyz;
+	float r_depth = texture(depth, texCoord).x;
+	
+	vec3 a_color = getKernelColor5(kernel, texCoord, scene);
+	float a_depth = getKernelColor5(kernel,texCoord,depth).x;
+	
+	vec3 base_color = mix(r_color,a_color,min(1,max(0,abs((z1-z0)/z0))));
+	float outline = -250*distance(a_depth,r_depth);
+	
+	float vignetteScale = 0.4;
+	float vignette = 1-vignetteScale*dot(pos,pos);
+	
+	vec3 color = base_color*vignette+outline;
 	
 	FragColor = vec4(color,1.0);
 }

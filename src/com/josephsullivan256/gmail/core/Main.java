@@ -243,9 +243,9 @@ public class Main {
 		shader1.use();
 		texUniform.uniform(0, shader1);
 		sunDirection.uniform(sunDir, shader1);
-		sunAmbient.uniform(new Vec3(0.1f,0.5f,1).scaledBy(0.4f), shader1);
-		sunDiffuse.uniform(new Vec3(1f,0.8f,0.7f).scaledBy(0.9f), shader1);
-		sunSpecular.uniform(new Vec3(1f,0.8f,0.7f).scaledBy(0.5f), shader1);
+		sunAmbient.uniform(new Vec3(0.1f,0.5f,1).scaledBy(0.1f), shader1);
+		sunDiffuse.uniform(new Vec3(1f,0.9f,0.8f).scaledBy(0.8f), shader1);
+		sunSpecular.uniform(new Vec3(1f,0.9f,0.8f).scaledBy(0.6f), shader1);
 		
 		//pre-render state settings
 		GL11.glViewport(0, 0, width, height);
@@ -261,7 +261,7 @@ public class Main {
 			
 			fbo.bind();
 			
-			GL11.glClearColor(0f, 0f, 0f, 0f);
+			GL11.glClearColor(0f, 1f, 1f, 0f);
 			GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
 			GL11.glEnable(GL11.GL_DEPTH_TEST);
 			
@@ -293,7 +293,7 @@ public class Main {
 		for(int x = 0; x < level.length; x++){
 			for(int y = 0; y < level[0].length; y++){
 				for(int z = 0; z < level[0][0].length; z++){
-					if(level[x][y][z]) offsets.add(new Vec3(x,y,z).scaledBy(1f));
+					if(level[x][y][z]) offsets.add(new Vec3(x,y,z).scaledBy(1.2f));
 				}
 			}
 		}
