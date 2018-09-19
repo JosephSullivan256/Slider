@@ -11,7 +11,7 @@ uniform vec2 dimensions;
 uniform vec2 nf;
 
 vec3 get(vec2 offset, vec2 texCoord, sampler2D tex){
-	return texture(tex,texCoord+vec2(2*offset.x/dimensions.x,2*offset.y/dimensions.y)).xyz;
+	return texture(tex,texCoord+vec2(offset.x/dimensions.x,offset.y/dimensions.y)).xyz;
 }
 
 vec3 getKernelColor3(float kernel[9], vec2 texCoord, sampler2D texture){
