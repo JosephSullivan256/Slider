@@ -65,7 +65,7 @@ public class Texture {
 
 	private void setWrapping(int wrapping){
 		GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, wrapping);
-		GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, wrapping);
+		GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, wrapping);
 	}
 	
 	private void setFilters(int minifyFilter, int magnifyFilter) {

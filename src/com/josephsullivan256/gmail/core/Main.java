@@ -4,15 +4,25 @@ import static org.lwjgl.opengl.GL11.GL_FRONT_AND_BACK;
 import static org.lwjgl.opengl.GL11.GL_LINE;
 import static org.lwjgl.opengl.GL11.glPolygonMode;
 
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import javax.imageio.ImageIO;
 
+import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL12;
+import org.lwjgl.opengl.GL13;
+import org.lwjgl.opengl.GL14;
 import org.lwjgl.opengl.GL15;
+import org.lwjgl.opengl.GL30;
 
 import com.josephsullivan256.gmail.gl.BufferObject;
 import com.josephsullivan256.gmail.gl.FrameBuffer;
@@ -32,6 +42,8 @@ import com.josephsullivan256.gmail.math.linalg.Matrix;
 import com.josephsullivan256.gmail.math.linalg.Vec2;
 import com.josephsullivan256.gmail.math.linalg.Vec2i;
 import com.josephsullivan256.gmail.math.linalg.Vec3;
+import com.josephsullivan256.gmail.render.DirectionalLight;
+import com.josephsullivan256.gmail.render.SceneInfo;
 import com.josephsullivan256.gmail.util.Pair;
 import com.josephsullivan256.gmail.util.Procedure;
 
@@ -40,8 +52,8 @@ public class Main {
 	public Main() throws IOException {
 		System.out.println("LWJGL " + Utils.getVersion());
 		
-		int width = 800;
-		int height = 800;
+		int width = 1600;
+		int height = 900;
 		
 		Utils.initGLFW();
 		Window window = new Window("hello world",width,height);
@@ -56,171 +68,39 @@ public class Main {
 		callback.addCallback(cameraCallback);
 		callback1.addCallback(cameraCallback);
 		
-		Level3D lvl = new Level3D(20,20,20,50);
+		ExtraKeyCallback keys = new ExtraKeyCallback();
+		callback.addCallback(keys);
+		
+		Level3D lvl = new Level3D(20,20,20,200);
 		
 		float far = 1000f;
 		float near = 0.1f;
-		Matrix perspective = Matrix.perspective((float)width/(float)height, (float)Math.PI/2f, far, near);
+		Matrix perspective = Matrix.perspective((float)width/((float)height), (float)Math.PI/2f, far, near);
 		
 		Utils.initGL();
 		
-		Shader shader0 = new Shader(Utils.readFile("shaders/shader0.vsh"),Utils.readFile("shaders/shader0.fsh"));
-		Shader shader1 = new Shader(Utils.readFile("shaders/shader1.vsh"),Utils.readFile("shaders/shader1.fsh"));
+		Shader blockShader = new Shader(Utils.readFile("shaders/shader0.vsh"),Utils.readFile("shaders/shader0.fsh"));
+		Shader wallShader = new Shader(Utils.readFile("shaders/shader1.vsh"),Utils.readFile("shaders/shader1.fsh"));
 		Shader shaderF0 = new Shader(Utils.readFile("shaders/shaderF0.vsh"),Utils.readFile("shaders/shaderF0.fsh"));
 		
-		Texture tex0 = new Texture(ImageIO.read(new File("textures/noise0.png")));
-		Texture tex1 = new Texture(ImageIO.read(new File("textures/noise1.png")));
-		Texture tex2 = new Texture(ImageIO.read(new File("textures/noise2.png")));
+		Texture tex = new Texture(ImageIO.read(new File("textures/noise2.png")));
 		
-		int[] indices = new int[]{
-				0,1,2,
-				1,3,2,
-				1,5,3,
-				5,7,3,
-				5,4,7,
-				4,6,7,
-				4,0,6,
-				0,2,6,
-				4,5,0,
-				5,1,0,
-				2,3,6,
-				3,7,6
-		};
+		SceneInfo sceneInfo = new SceneInfo(new DirectionalLight(
+				new Vec3(-2,-3,-4).normalized(),
+				new Vec3(0.1f,0.5f,1).scaledBy(0.4f),
+				new Vec3(1f,0.8f,0.7f).scaledBy(0.9f),
+				new Vec3(1f,0.8f,0.7f).scaledBy(0.5f)));
 		
-		float[] cubeVertices = new float[]{
-				 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  0.0f,
-			    -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
-			     0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
-			    -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  1.0f,
-			     0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
-			    -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
-
-			    -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
-			     0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  0.0f,
-			     0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
-			     0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
-			    -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  1.0f,
-			    -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
-
-			    -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
-			    -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
-			    -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
-			    -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
-			    -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
-			    -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
-
-			     0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
-			     0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
-			     0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
-			     0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
-			     0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
-			     0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
-
-			    -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
-			     0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  1.0f,
-			     0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
-			     0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
-			    -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  0.0f,
-			    -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
-
-			     0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  1.0f,
-			    -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,
-			     0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
-			    -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  0.0f,
-			     0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
-			    -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
-		};
-		
-		VertexArrayObject vao0 = new VertexArrayObject();
-		Vec3[] offsets0 = offsetsFromLevel(lvl.getInterior());
-		{
-			vao0.initialize(
-					Pair.init(
-							BufferObject.vbo().bind().bufferData(cubeVertices, GL15.GL_STATIC_DRAW),
-							new VertexAttributes()
-							.with(3, GL11.GL_FLOAT)
-							.with(3, GL11.GL_FLOAT)
-							.with(2, GL11.GL_FLOAT)
-							),
-					Pair.init(
-							BufferObject.vbo().bind().bufferData(offsets0, GL15.GL_STATIC_DRAW),
-							new VertexAttributes()
-							.withInstanced(3, GL11.GL_FLOAT)
-							)
-					);
-		}
-		
-		VertexArrayObject vao1 = new VertexArrayObject();
-		Vec3[] offsets1 = offsetsFromLevel(lvl.getWalls());
-		{
-			vao1.initialize(
-					Pair.init(
-							BufferObject.vbo().bind().bufferData(cubeVertices, GL15.GL_STATIC_DRAW),
-							new VertexAttributes()
-							.with(3, GL11.GL_FLOAT)
-							.with(3, GL11.GL_FLOAT)
-							.with(2, GL11.GL_FLOAT)
-							),
-					Pair.init(
-							BufferObject.vbo().bind().bufferData(offsets1, GL15.GL_STATIC_DRAW),
-							new VertexAttributes()
-							.withInstanced(3, GL11.GL_FLOAT)
-							)
-					);
-		}
-		
-		//instantiate uniform classes
-		Uniform<Vec3> sunDirection, sunAmbient, sunDiffuse, sunSpecular;
-		sunDirection = new Uniform<Vec3>("sun.direction",UniformPasser.uniform3f);
-		sunAmbient = new Uniform<Vec3>("sun.ambient",UniformPasser.uniform3f);
-		sunDiffuse = new Uniform<Vec3>("sun.diffuse",UniformPasser.uniform3f);
-		sunSpecular = new Uniform<Vec3>("sun.specular",UniformPasser.uniform3f);
-		Vec3 sunDir = new Vec3(-2,-3,-4).normalized();
-		
-		Uniform<Matrix> transformUniform = new Uniform<Matrix>("transform",UniformPasser.uniformMatrix4);
-		Uniform<Matrix> perspectiveUniform = new Uniform<Matrix>("perspective",UniformPasser.uniformMatrix4);
-		Uniform<Integer> texUniform = new Uniform<Integer>("noise",UniformPasser.uniform1i);
+		LevelRenderer lr = new LevelRenderer(lvl, sceneInfo, blockShader, wallShader, tex);
 		
 		Uniform<Vec2> nearFarUniform = new Uniform<Vec2>("nf",UniformPasser.uniform2f);
 		Uniform<Vec2> dimensionsUniform = new Uniform<Vec2>("dimensions",UniformPasser.uniform2f);
 		Uniform<Integer> texF0Uniform0 = new Uniform<Integer>("scene",UniformPasser.uniform1i);
 		Uniform<Integer> texF0Uniform1 = new Uniform<Integer>("depth",UniformPasser.uniform1i);
 		
-		//render procedures
-		Procedure drawVao0 = ()->{
-			vao0.bind();
-			shader0.use();
-			
-			//uniforms
-			transformUniform.uniform(camera.getTransform(), shader0);
-			perspectiveUniform.uniform(perspective, shader0);
-			
-			//assign texture to unit
-			tex2.assignToUnit(0);
-			
-			//glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-			vao0.drawArraysInstanced(indices.length, offsets0.length);
-			vao0.unbind();
-		};
-		
-		Procedure drawVao1 = ()->{
-			vao1.bind();
-			shader1.use();
-			
-			//uniforms
-			transformUniform.uniform(camera.getTransform(), shader1);
-			perspectiveUniform.uniform(perspective, shader1);
-			
-			//assign texture to unit
-			tex2.assignToUnit(0);
-			
-			//glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-			vao1.drawArraysInstanced(indices.length, offsets1.length);
-			vao1.unbind();
-		};
-		
 		Pair<FrameBuffer,Texture[]> pair = FrameBuffer.withColorDepth(width, height);
 		FrameBuffer fbo = pair.a;
+		
 		ScreenRenderProcedure drawScreen = new ScreenRenderProcedure(
 				shaderF0,
 				pair.b,
@@ -232,20 +112,9 @@ public class Main {
 					}
 				);
 		
-		//initial uniforms
-		shader0.use();
-		texUniform.uniform(0, shader0);
-		sunDirection.uniform(sunDir, shader0);
-		sunAmbient.uniform(new Vec3(0.1f,0.5f,1).scaledBy(0.4f), shader0);
-		sunDiffuse.uniform(new Vec3(1f,0.8f,0.7f).scaledBy(0.9f), shader0);
-		sunSpecular.uniform(new Vec3(1f,0.8f,0.7f).scaledBy(0.5f), shader0);
-		
-		shader1.use();
-		texUniform.uniform(0, shader1);
-		sunDirection.uniform(sunDir, shader1);
-		sunAmbient.uniform(new Vec3(0.1f,0.5f,1).scaledBy(0.1f), shader1);
-		sunDiffuse.uniform(new Vec3(1f,0.9f,0.8f).scaledBy(0.8f), shader1);
-		sunSpecular.uniform(new Vec3(1f,0.9f,0.8f).scaledBy(0.6f), shader1);
+		//for screenshotting
+		Pair<FrameBuffer,Texture[]> pair2 = FrameBuffer.withColorDepth(width, height);
+		FrameBuffer fbo2 = pair2.a;
 		
 		//pre-render state settings
 		GL11.glViewport(0, 0, width, height);
@@ -265,8 +134,7 @@ public class Main {
 			GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
 			GL11.glEnable(GL11.GL_DEPTH_TEST);
 			
-			drawVao0.run();
-			drawVao1.run();
+			lr.render(camera.getTransform(), perspective);
 			
 			fbo.unbind();
 			
@@ -275,6 +143,30 @@ public class Main {
 			GL11.glDisable(GL11.GL_DEPTH_TEST);
 			
 			drawScreen.run();
+			
+			if(keys.isPDown()){
+				fbo2.bind();
+				GL11.glClearColor(0f, 0f, 0f, 0f);
+				GL11.glClear(GL11.GL_COLOR_BUFFER_BIT);
+				GL11.glDisable(GL11.GL_DEPTH_TEST);
+				drawScreen.run();
+				
+				pair.b[0].assignToUnit(0);
+				
+				GL11.glReadBuffer(GL30.GL_COLOR_ATTACHMENT0);
+				int bpp = 4; // Assuming a 32-bit display with a byte each for red, green, blue, and alpha.
+				ByteBuffer buffer = BufferUtils.createByteBuffer(width * height * bpp);
+				GL11.glReadPixels(0, 0, width, height, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, buffer );
+				fbo2.unbind();
+				
+				String name = "save"+LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH-mm-ss"));
+				String format = "png";
+				File file = new File(name+"."+format);// The file to save to.
+				
+				try {
+					ImageIO.write(bufferToImage(buffer,width,height), format, file);
+				} catch (IOException e) { e.printStackTrace(); }
+			}
 			
 			camera.move(cameraCallback.getMovement().scaledBy(0.1f));
 			camera.rotate(cameraCallback.getRotation().scaledBy(0.001f));
@@ -285,6 +177,28 @@ public class Main {
 		
 		window.destroy();
 		Utils.terminateGLFW();
+	}
+	
+	public static BufferedImage bufferToImage(ByteBuffer buffer, int width, int height){
+		return bufferToImage(buffer,width,height,4);
+	}
+	
+	public static BufferedImage bufferToImage(ByteBuffer buffer, int width, int height, int bpp){ //bpp = bytes per pixel
+		BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+		   
+		for(int x = 0; x < width; x++) 
+		{
+		    for(int y = 0; y < height; y++)
+		    {
+		        int i = (x + (width * y)) * bpp;
+		        int r = buffer.get(i) & 0xFF;
+		        int g = buffer.get(i + 1) & 0xFF;
+		        int b = buffer.get(i + 2) & 0xFF;
+		        image.setRGB(x, height - (y + 1), (0xFF << 24) | (r << 16) | (g << 8) | b);
+		    }
+		}
+		
+		return image;
 	}
 	
 	public static Vec3[] offsetsFromLevel(boolean[][][] level){
