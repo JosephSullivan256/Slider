@@ -9,8 +9,11 @@ public class Level3D {
 	private int x1,y1,z1;
 	
 	private Vec3i exit;
+	private Vec3i start;
 	private Vec3i dir;
 	private ArrayList<Vec3i> path;
+	
+	private Vec3i player;
 	
 	public Level3D(int x1, int y1, int z1, int iterations){
 		level = new boolean[x1][y1][z1];
@@ -18,16 +21,55 @@ public class Level3D {
 		this.y1 = y1;
 		this.z1 = z1;
 		
-		generateWalls(level,true);
-		generateExit();
-		
+		boolean success = false;
+		while(!success){
+			clear(level);
+			generateWalls(level,true);
+			generateExit();
+			success = initLevel(iterations);
+		}
+		start = path.get(path.size()-1);
+		player = start;
+	}
+	
+	public void movePlayer(Vec3i dir){
+		while(!get(player.plus(dir))){
+			player = player.plus(dir);
+		}
+	}
+	
+	public Vec3i getPlayer(){
+		return player;
+	}
+	
+	public Vec3i getStart(){
+		return start;
+	}
+	
+	public Vec3i getExit(){
+		return exit;
+	}
+	
+	private void clear(boolean[][][] l){
+		for(int x = 0; x < l.length; x++){
+			for(int y = 0; y < l[0].length; y++){
+				for(int z = 0; z < l[0][0].length; z++){
+					l[x][y][z] = false;
+				}
+			}
+		}
+	}
+	
+	private boolean initLevel(int iterations){
 		path = new ArrayList<Vec3i>();
 		path.add(exit);
 		path.add(random3D(path.get(path.size()-1),dir));
 		
 		for(int i = 0; i < iterations; i++){
 			boolean success = false;
+			int tries = 0;
 			while(!success){
+				if(tries > 20) return false;
 				Vec3i prev = path.get(path.size()-1);
 				
 				Vec3i dir2 = randomDir(dir);
@@ -41,8 +83,10 @@ public class Level3D {
 					dir = dir2;
 					success = true;
 				}
+				tries++;
 			}
 		}
+		return true;
 	}
 	
 	private boolean inhibits(Vec3i block){

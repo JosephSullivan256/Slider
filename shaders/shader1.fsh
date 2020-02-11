@@ -33,14 +33,14 @@ vec3 phong(vec3 amb, vec3 diff, vec3 spec, vec3 norm, vec3 viewDir, vec3 lightDi
 
 void main()
 {
-	vec2 position = vec2(gl_FragCoord.x/800,gl_FragCoord.y/800)*2-vec2(1,1);
-	float zScale = 0.25;
+	vec2 position = fragPos.xy/12;
+	float zScale = 0.250;
 	float quantification = 1*(pow(position.x,2)+pow(position.y,2))+pow(gl_FragCoord.z/zScale,2);
 	
 	float quota = 15;
 	
 	if(quantification < quota) discard;
-	else if (quantification < quota*1.01){
+	else if (quantification < quota*1.003){
 		FragColor = vec4(0.9,0.9,0.8,1.0);
 	} else {
 		//sun lighting
